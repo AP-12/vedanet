@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import emailjs from '@emailjs/browser';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default markers in react-leaflet
@@ -11,11 +12,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const Contact = () => {
+const ContactEmailJS = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '', 
     company: '',
     address: '',
     message: ''
@@ -30,10 +30,15 @@ const Contact = () => {
   const [currentLocation, setCurrentLocation] = useState({
     address: 'Mohali, Punjab, India',
     email: 'tusharsharma.vedanet@gmail.com',
-    coordinates: { latitude: 30.7046, longitude: 76.7179 }, // Mohali coordinates
+    coordinates: { latitude: 30.7046, longitude: 76.7179 },
     loading: false,
     error: null
   });
+
+  // EmailJS configuration - Replace with your actual values
+  const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';
+  const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+  const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
 
   const handleChange = (e) => {
     setFormData({
@@ -62,37 +67,35 @@ const Contact = () => {
     return errors;
   };
 
-  const submitForm = async (formData) => {
-    // Using PHP backend with PHPMailer for form submission
-    // Update this URL to match your PHP backend deployment
-    const PHP_BACKEND_ENDPOINT = 'http://localhost/ItWeb/backend/contact-form.php'; // Update this URL when deploying
+  const sendEmail = async (formData) => {
+    // Initialize EmailJS
+    emailjs.init(EMAILJS_PUBLIC_KEY);
 
-    const response = await fetch(PHP_BACKEND_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        company: formData.company || 'Not provided',
-        address: formData.address || 'Not provided',
-        message: formData.message
-      }),
-    });
+    const templateParams = {
+      from_name: formData.name,
+      from_email: formData.email,
+      company: formData.company || 'Not provided',
+      address: formData.address || 'Not provided',
+      message: formData.message,
+      to_email: 'tusharsharma.vedanet@gmail.com'
+    };
 
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'Failed to send message. Please try again later.');
+    try {
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams
+      );
+      
+      console.log('Email sent successfully:', response);
+      return { success: true, message: 'Email sent successfully!' };
+    } catch (error) {
+      console.error('Email sending failed:', error);
+      throw new Error('Failed to send email. Please try again later.');
     }
-
-    return data;
   };
 
   const handleSubmit = async (e) => {
-    
     e.preventDefault();
 
     const errors = validateForm();
@@ -108,8 +111,7 @@ const Contact = () => {
     setFormStatus({ submitting: true, submitted: false, error: null });
 
     try {
-      // Submit the form using Formspree
-      await submitForm(formData);
+      await sendEmail(formData);
 
       console.log('Form submitted successfully:', formData);
 
@@ -120,7 +122,7 @@ const Contact = () => {
       });
 
       // Reset form after successful submission
-      setFormData({ name: '', email: '', company: '', address: '', message: '',phone:'' });
+      setFormData({ name: '', email: '', company: '', address: '', message: '' });
 
       // Reset success message after 5 seconds
       setTimeout(() => {
@@ -137,14 +139,11 @@ const Contact = () => {
     }
   };
 
-  // Removed unused reverseGeocode function
-
   const fetchCurrentLocation = async () => {
-    // Set static location for Mohali instead of fetching current location
     setCurrentLocation({
       address: 'Mohali, Punjab, India',
       email: 'tusharsharma.vedanet@gmail.com',
-      coordinates: { latitude: 30.7046, longitude: 76.7179 }, // Mohali coordinates
+      coordinates: { latitude: 30.7046, longitude: 76.7179 },
       loading: false,
       error: null
     });
@@ -212,7 +211,6 @@ const Contact = () => {
                     )}
                   </div>
                 </div>
-                
                 
                 <div className="flex items-start gap-4">
                   <div className="flex items-center justify-center rounded-full bg-blue-100 p-3">
@@ -316,24 +314,6 @@ const Contact = () => {
                       placeholder="Enter your email address"
                     />
                   </div>
-
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                      disabled={formStatus.submitting}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-
                   
                   <div>
                     <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
@@ -478,4 +458,4 @@ const Contact = () => {
   );
 };
 
-export default Contact;
+export default ContactEmailJS;

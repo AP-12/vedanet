@@ -27,3 +27,6 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Email Configuration (Keep credentials private)
+backend/config.php
